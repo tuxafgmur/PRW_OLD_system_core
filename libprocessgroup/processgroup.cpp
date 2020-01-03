@@ -208,7 +208,7 @@ static int DoKillProcessGroupOnce(uid_t uid, int initialPid, int signal) {
                      << " as part of process cgroup " << initialPid;
 
         if (kill(-pgid, signal) == -1) {
-            PLOG(WARNING) << "kill(" << -pgid << ", " << signal << ") failed";
+            //PLOG(WARNING) << "kill(" << -pgid << ", " << signal << ") failed";
         }
     }
 
@@ -218,7 +218,7 @@ static int DoKillProcessGroupOnce(uid_t uid, int initialPid, int signal) {
                      << initialPid;
 
         if (kill(pid, signal) == -1) {
-            PLOG(WARNING) << "kill(" << pid << ", " << signal << ") failed";
+            //PLOG(WARNING) << "kill(" << pid << ", " << signal << ") failed";
         }
     }
 
@@ -226,7 +226,6 @@ static int DoKillProcessGroupOnce(uid_t uid, int initialPid, int signal) {
 }
 
 static int KillProcessGroup(uid_t uid, int initialPid, int signal, int retries) {
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
     int retry = retries;
     int processes;
@@ -246,27 +245,13 @@ static int KillProcessGroup(uid_t uid, int initialPid, int signal, int retries) 
         return -1;
     }
 
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
     // We only calculate the number of 'processes' when killing the processes.
     // In the retries == 0 case, we only kill the processes once and therefore
     // will not have waited then recalculated how many processes are remaining
     // after the first signals have been sent.
-    // Logging anything regarding the number of 'processes' here does not make sense.
-
     if (processes == 0) {
-        if (retries > 0) {
-            LOG(INFO) << "Successfully killed process cgroup uid " << uid << " pid " << initialPid
-                      << " in " << static_cast<int>(ms) << "ms";
-        }
         return RemoveProcessGroup(uid, initialPid);
     } else {
-        if (retries > 0) {
-            LOG(ERROR) << "Failed to kill process cgroup uid " << uid << " pid " << initialPid
-                       << " in " << static_cast<int>(ms) << "ms, " << processes
-                       << " processes remain";
-        }
         return -1;
     }
 }
