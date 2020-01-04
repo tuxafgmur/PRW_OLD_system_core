@@ -112,8 +112,10 @@ class CrashQueue {
 
   std::pair<std::string, unique_fd> get_output() {
     std::string path;
-    unique_fd result(openat(dir_fd_, ".", O_CREAT | O_WRONLY | O_APPEND | O_TMPFILE | O_CLOEXEC, 0640));
-    if (result == -1) {
+
+    //unique_fd result(openat(dir_fd_, ".", O_CREAT | O_WRONLY | O_APPEND | O_TMPFILE | O_CLOEXEC, 0640));
+    unique_fd result ; 
+    if (result == 1) {
       // We might not have O_TMPFILE. Try creating with an arbitrary filename instead.
       static size_t counter = 0;
       std::string tmp_filename = StringPrintf(".temporary%zu", counter++);
@@ -200,7 +202,7 @@ class CrashQueue {
 };
 
 // Whether java trace dumps are produced via tombstoned.
-static constexpr bool kJavaTraceDumpsEnabled = true;
+static constexpr bool kJavaTraceDumpsEnabled = false;
 
 // Forward declare the callbacks so they can be placed in a sensible order.
 static void crash_accept_cb(evconnlistener* listener, evutil_socket_t sockfd, sockaddr*, int, void*);
@@ -356,13 +358,15 @@ static void crash_completed_cb(evutil_socket_t sockfd, short ev, void* arg) {
     std::string tombstone_path = CrashQueue::for_crash(crash)->get_next_artifact_path();
 
     // linkat doesn't let us replace a file, so we need to unlink first.
-    int rc = unlink(tombstone_path.c_str());
+    // int rc = unlink(tombstone_path.c_str());
+    int rc = 0;
     if (rc != 0 && errno != ENOENT) {
-      PLOG(ERROR) << "failed to unlink tombstone at " << tombstone_path;
+      // PLOG(ERROR) << "failed to unlink tombstone at " << tombstone_path;
       goto fail;
     }
 
-    rc = linkat(AT_FDCWD, fd_path.c_str(), AT_FDCWD, tombstone_path.c_str(), AT_SYMLINK_FOLLOW);
+    //rc = linkat(AT_FDCWD, fd_path.c_str(), AT_FDCWD, tombstone_path.c_str(), AT_SYMLINK_FOLLOW);
+    rc = 0;
     if (rc != 0) {
       PLOG(ERROR) << "failed to link tombstone";
     } else {
@@ -379,9 +383,9 @@ static void crash_completed_cb(evutil_socket_t sockfd, short ev, void* arg) {
     // If we don't have O_TMPFILE, we need to clean up after ourselves.
     if (!crash->crash_tombstone_path.empty()) {
       rc = unlink(crash->crash_tombstone_path.c_str());
-      if (rc != 0) {
-        PLOG(ERROR) << "failed to unlink temporary tombstone at " << crash->crash_tombstone_path;
-      }
+      //if (rc != 0) {
+      //  PLOG(ERROR) << "failed to unlink temporary tombstone at " << crash->crash_tombstone_path;
+      //}
     }
   }
 
@@ -443,6 +447,6 @@ int main(int, char* []) {
     }
   }
 
-  LOG(INFO) << "tombstoned successfully initialized";
+  //LOG(INFO) << "tombstoned successfully initialized";
   event_base_dispatch(base);
 }
